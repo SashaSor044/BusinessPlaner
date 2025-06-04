@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <title>TimeSaver — Онлайн-запис</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --primary: #0066ff;
+      --secondary: #00d2ff;
+      --bg-light: #f9f9fb;
+      --bg-dark: #121212;
+      --card-light: #ffffff;
+      --card-dark: #1f1f1f;
+      --text-light: #ffffff;
+      --text-dark: #333333;
+      --radius: 15px;
+      --shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    body.light {
+      background: var(--bg-light);
+      color: var(--text-dark);
+    }
+
+    body.dark {
+      background: var(--bg-dark);
+      color: var(--text-light);
+    }
+
+    header {
+      padding: 20px;
+      background: linear-gradient(to right, var(--primary), var(--secondary));
+      color: white;
+      text-align: center;
+      border-bottom-left-radius: var(--radius);
+      border-bottom-right-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 30px auto;
+      padding: 20px;
+    }
+
+    .card {
+      background: var(--card-light);
+      padding: 25px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 30px;
+      transition: background 0.3s, color 0.3s;
+      position: relative; /* Needed for back button positioning */
+    }
+
+    body.dark .card {
+      background: var(--card-dark);
+      color: var(--text-light);
+    }
+
+    h1, h2, h3 {
+      margin-top: 0;
+    }
+
+    input, select, button, textarea {
+      width: 100%;
+      padding: 12px 16px;
+      margin-top: 10px;
+      margin-bottom: 20px;
+      border-radius: var(--radius);
+      border: 1px solid #ccc;
+      font-size: 16px;
+      box-shadow: var(--shadow);
+      outline: none;
+    }
+
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+    }
+
+    button:hover {
+      background: var(--secondary);
+      transform: scale(1.02);
+    }
+
+    .screen {
+      display: none;
+    }
+
+    .active-screen {
+      display: block; /* This class ensures the screen is visible */
+    }
+
+    .lang-theme {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .lang-theme select {
+      flex: 1;
+    }
+
+    #logoPreview {
+      max-height: 120px;
+      display: block;
+      margin-top: 10px;
+      border-radius: var(--radius);
+    }
+
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    /* Styles for interactive stars */
+    #starRating span {
+      font-size: 30px;
+      cursor: pointer;
+      color: gray; /* Default color for unselected stars */
+      transition: color 0.2s;
+    }
+    #starRating span.selected {
+      color: gold; /* Color for selected stars */
+    }
+
+    /* Back button style */
+    .back-button {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      background: #ccc;
+      color: #333;
+      border: none;
+      border-radius: 50%;
+      width: 35px;
+      height: 35px;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      z-index: 10;
+      transition: background 0.2s;
+    }
+    .back-button:hover {
+      background: #bbb;
+    }
+  </style>
+</head>
+<body class="light">
+  <header>
+    <h1>TimeSaver</h1>
+    <p>Ваш асистент з керування записами</p>
+  </header>
+
+  <div class="container">
+
+    <div id="welcomeScreen" class="screen card">
+      <h1>👋 Вітаємо!</h1>
+      <p>Ласкаво просимо до TimeSaver — вашого помічника для онлайн-запису клієнтів.</p>
+      <button onclick="continueToHome()">Продовжити</button>
+    </div>
+
+    <div id="homeScreen" class="screen card">
+      <h2>📋 Головне меню</h2>
+      <div class="buttons">
+        <button onclick="showBusinesses()">🏢 Мої бізнеси</button>
+        <button onclick="showScreen('settingsScreen')">⚙️ Налаштування</button>
+        <button onclick="showScreen('feedbackScreen')">⭐ Залишити відгук</button>
+        <button onclick="alert('TimeSaver — додаток для онлайн-запису клієнтів. Усі дані зберігаються локально.\n\nРозробник: Сорока Олександр.')">ℹ️ Про програму</button>
+      </div>
+    </div>
+    
+    <div id="businessListScreen" class="screen card">
+      <button class="back-button" onclick="goBack()">&#8592;</button> <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>🏢 Мої бізнеси</h2>
+        <button onclick="showCreateBusinessModal()" style="font-size: 24px; padding: 2px 10px;">➕</button>
+      </div>
+      <div id="businessList"></div>
+      <br>
+    </div>
+
+    <div id="businessDashboard" class="screen card">
+      <button class="back-button" onclick="goBack()">&#8592;</button> <h2 id="businessDashboardName">Меню бізнесу</h2>
+      <img id="businessDashboardLogo" src="" alt="Логотип бізнесу" style="max-height: 100px; display: none; margin-bottom: 15px; border-radius: var(--radius);">
+      <p>Тип бізнесу: <span id="businessDashboardType"></span></p>
+      <h3>Клієнти на сьогодні:</h3>
+      <p>(Дані про клієнтів на сьогодні)</p>
+      <h3>Розклад на сьогодні:</h3>
+      <p>(Дані про розклад на сьогодні)</p>
+      <div class="buttons">
+        <button onclick="showAddClientScreen()">➕ Додати клієнта</button>
+        <button onclick="showAddServiceScreen()">💼 Додати послуги</button>
+        <button onclick="showScheduleScreen()">🕒 Розклад</button>
+      </div>
+    </div>
+
+    <div id="createBusinessModal" class="screen card" style="display:none; position:fixed; top:10%; left:50%; transform:translateX(-50%); z-index:999; background:white; box-shadow:0 0 15px rgba(0,0,0,0.3);">
+      <h3>➕ Додати бізнес</h3>
+      <label>Тип бізнесу: <input id="businessType" type="text"></label><br><br>
+      <label>Назва бізнесу: <input id="businessName" type="text"></label><br><br>
+      <label>Додати фото: <input id="logoInput" type="file" accept="image/*"></label><br><br>
+      <img id="logoPreview" src="" alt="Прев'ю" style="max-width:100px; display:none;"><br><br>
+      <button onclick="saveBusinessInfo()">Зберегти</button>
+      <button onclick="document.getElementById('createBusinessModal').style.display='none'">Скасувати</button>
+    </div>
+
+    <div id="feedbackScreen" class="screen card">
+      <button class="back-button" onclick="goBack()">&#8592;</button> <h2>⭐ Залишити відгук</h2>
+      <p>Оцініть додаток:</p>
+      <div id="starRating">
+        <span data-value="1">⭐</span>
+        <span data-value="2">⭐</span>
+        <span data-value="3">⭐</span>
+        <span data-value="4">⭐</span>
+        <span data-value="5">⭐</span>
+      </div>
+      <br>
+      <textarea id="feedbackText" placeholder="Напишіть свій відгук" style="width:100%; height:100px;"></textarea>
+      <br><br>
+      <button onclick="submitFeedback()">Надіслати</button>
+    </div>
+
+    <div id="settingsScreen" class="screen card">
+      <button class="back-button" onclick="goBack()">&#8592;</button> <h2>⚙️ Налаштування</h2>
+      <div class="lang-theme">
+        <div style="flex:1">
+          <label>Мова інтерфейсу:</label>
+          <select id="languageSelect">
+            <option value="uk">Українська</option>
+            <option value="en">English</option>
+            <option value="ru">Русский</option>
+          </select>
+        </div>
+        <div style="flex:1">
+          <label>Тема оформлення:</label>
+          <select id="themeSelect">
+            <option value="light">Світла</option>
+            <option value="dark">Темна</option>
+          </select>
+        </div>
+      </div>
+      <button onclick="saveSettings()">💾 Зберегти налаштування</button>
+    </div>
+    
+    <div id="addClientScreen" class="screen card">
+      <button class="back-button" onclick="goBack()">&#8592;</button>
+      <h2>➕ Додати клієнта</h2>
+      <label>Ім'я клієнта: <input type="text" id="clientName"></label>
+      <label>Телефон: <input type="tel" id="clientPhone"></label>
+      <label>Примітки: <textarea id="clientNotes"></textarea></label>
+      <button onclick="saveClient()">Зберегти клієнта</button>
+    </div>
+
+    <div id="addServiceScreen" class="screen card">
+      <button class="back-button" onclick="goBack()">&#8592;</button>
+      <h2>💼 Додати послугу</h2>
+      <label>Назва послуги: <input type="text" id="serviceName"></label>
+      <label>Ціна: <input type="number" id="servicePrice" step="0.01"></label>
+      <label>Тривалість (хв): <input type="number" id="serviceTime"></label>
+      <button onclick="saveService()">Зберегти послугу</button>
+    </div>
+
+    <div id="scheduleScreen" class="screen card">
+      <button class="back-button" onclick="goBack()">&#8592;</button>
+      <h2>🕒 Розклад</h2>
+      <p>Тут буде відображатися розклад для <span id="scheduleBusinessName"></span>.</p>
+      <div id="scheduleContent">
+        <p>Наразі розклад ще не реалізований повноцінно. Будь ласка, зачекайте на оновлення.</p>
+      </div>
+    </div>
+
+    <div id="mainApp" class="screen card">
+      <button class="back-button" onclick="goBack()">&#8592;</button>
+      <h2>📒 Панель керування</h2>
+      <p>Тут буде система послуг, розкладу та клієнтів (додається далі)</p>
+    </div>
+
+  </div>
+
+  <script>
+    const screens = [
+      'welcomeScreen', 'homeScreen', 'businessListScreen', 'businessDashboard',
+      'createBusinessModal', 'feedbackScreen', 'settingsScreen', 'mainApp',
+      'addClientScreen', 'addServiceScreen', 'scheduleScreen'
+    ];
+    let currentRating = 0;
+    let screenHistory = [];
+    let selectedBusinessIndex = -1;
+
+    function showScreen(id) {
+      // Add current screen to history before navigating away, if it's not the modal
+      const currentActiveScreen = document.querySelector('.screen.active-screen');
+      if (currentActiveScreen && currentActiveScreen.id !== 'createBusinessModal' && currentActiveScreen.id !== id) {
+          screenHistory.push(currentActiveScreen.id);
+      }
+      
+      screens.forEach(screenId => {
+        const screenElement = document.getElementById(screenId);
+        if (screenElement) {
+          screenElement.style.display = "none";
+          screenElement.classList.remove('active-screen'); // Ensure active-screen is removed
+        }
+      });
+      
+      const targetScreen = document.getElementById(id);
+      if (targetScreen) {
+        targetScreen.style.display = "block";
+        targetScreen.classList.add('active-screen'); // Ensure active-screen is added
+      }
+    }
+
+    function goBack() {
+      if (screenHistory.length > 0) {
+        const lastScreenId = screenHistory.pop();
+        showScreen(lastScreenId);
+      } else {
+        // If no history, go to home screen (or welcome, depending on app logic)
+        showScreen('homeScreen'); // Default fallback if history is empty
+      }
+    }
+
+    function saveSettings() {
+      const lang = document.getElementById("languageSelect").value;
+      const theme = document.getElementById("themeSelect").value;
+      localStorage.setItem("settings", JSON.stringify({ lang, theme }));
+      document.body.className = theme;
+      alert("Налаштування збережено!");
+      showScreen('homeScreen');
+    }
+
+    function applySettings() {
+      const settings = JSON.parse(localStorage.getItem("settings") || "{}");
+      if (settings.theme) {
+        document.body.className = settings.theme;
+        document.getElementById("themeSelect").value = settings.theme;
+      }
+      if (settings.lang) {
+        document.getElementById("languageSelect").value = settings.lang;
+      }
+    }
+    
+    function saveBusinessInfo() {
+      const type = document.getElementById("businessType").value;
+      const name = document.getElementById("businessName").value;
+      const logo = document.getElementById("logoPreview").src;
+      
+      if (type && name) {
+        const allBusinesses = JSON.parse(localStorage.getItem("allBusinesses") || "[]");
+        allBusinesses.push({ type, name, logo, clients: [], services: [] }); // Initialize clients and services arrays
+        localStorage.setItem("allBusinesses", JSON.stringify(allBusinesses));
+        alert("Бізнес успішно створено!");
+        document.getElementById('createBusinessModal').style.display='none';
+        showBusinesses(); // Go to the business list after creation
+      } else {
+        alert("Будь ласка, заповніть всі поля.");
+      }
+    }
+
+    document.getElementById("logoInput").addEventListener("change", function () {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const preview = document.getElementById("logoPreview");
+        preview.src = e.target.result;
+        preview.style.display = "block";
+      };
+      reader.readAsDataURL(this.files[0]);
+    });
+
+    function showBusinesses() {
+      const list = document.getElementById("businessList");
+      list.innerHTML = "";
+      const businesses = JSON.parse(localStorage.getItem("allBusinesses") || "[]");
+      if (businesses.length === 0) {
+        list.innerHTML = "<p>Бізнесів ще не створено.</p>";
+      } else {
+        businesses.forEach((biz, index) => {
+          const btn = document.createElement("button");
+          btn.innerText = biz.name + " (" + biz.type + ")";
+          btn.onclick = () => openBusinessDashboard(index);
+          list.appendChild(btn);
+        });
+      }
+      showScreen("businessListScreen");
+    }
+
+    function openBusinessDashboard(index) {
+      const businesses = JSON.parse(localStorage.getItem("allBusinesses") || "[]");
+      const biz = businesses[index];
+      selectedBusinessIndex = index; // Set the currently selected business index
+      
+      document.getElementById("businessDashboardName").innerText = biz.name + " (Меню бізнесу)";
+      document.getElementById("businessDashboardType").innerText = biz.type;
+      
+      const logoElement = document.getElementById("businessDashboardLogo");
+      if (biz.logo && biz.logo !== window.location.href) { // Check if logo exists and is not a default empty string
+        logoElement.src = biz.logo;
+        logoElement.style.display = "block";
+      } else {
+        logoElement.src = "";
+        logoElement.style.display = "none";
+      }
+
+      showScreen("businessDashboard");
+    }
+
+    function continueToHome() {
+      showScreen("homeScreen");
+    }
+
+    function setRating(stars) {
+      currentRating = stars; // Store the selected rating
+      const spans = document.querySelectorAll("#starRating span");
+      spans.forEach((s, i) => {
+        if (i < stars) {
+          s.classList.add("selected");
+        } else {
+          s.classList.remove("selected");
+        }
+      });
+    }
+
+    // Add event listeners for star hover effect
+    document.addEventListener('DOMContentLoaded', () => {
+        const starRatingContainer = document.getElementById("starRating");
+        if (starRatingContainer) {
+            const stars = starRatingContainer.querySelectorAll("span");
+
+            stars.forEach(star => {
+                star.addEventListener('mouseover', () => {
+                    const value = parseInt(star.dataset.value);
+                    stars.forEach((s, i) => {
+                        if (i < value) {
+                            s.classList.add("selected");
+                        } else {
+                            s.classList.remove("selected");
+                        }
+                    });
+                });
+
+                star.addEventListener('mouseout', () => {
+                    // Reset to currentRating when mouse leaves
+                    stars.forEach((s, i) => {
+                        if (i < currentRating) {
+                            s.classList.add("selected");
+                        } else {
+                            s.classList.remove("selected");
+                        }
+                    });
+                });
+
+                star.addEventListener('click', () => {
+                    setRating(parseInt(star.dataset.value));
+                });
+            });
+        }
+    });
+
+    function submitFeedback() {
+      const feedbackText = document.getElementById("feedbackText").value;
+      if (currentRating === 0) {
+        alert("Будь ласка, оберіть кількість зірочок.");
+        return;
+      }
+      if (feedbackText.trim() === "") {
+        alert("Будь ласка, напишіть свій відгук.");
+        return;
+      }
+      alert(`Дякуємо за ваш відгук! Ви оцінили на ${currentRating} зірочок.`);
+      document.getElementById("feedbackText").value = "";
+      setRating(0); // Reset stars
+      showScreen('homeScreen'); // Go back to home screen
+    }
+
+    function showCreateBusinessModal() {
+      document.getElementById("createBusinessModal").style.display = "block";
+      // Clear previous inputs when opening the modal
+      document.getElementById("businessType").value = "";
+      document.getElementById("businessName").value = "";
+      document.getElementById("logoInput").value = ""; // Clear file input
+      document.getElementById("logoPreview").src = "";
+      document.getElementById("logoPreview").style.display = "none";
+    }
+
+    // --- New Client Functions ---
+    function showAddClientScreen() {
+      showScreen('addClientScreen');
+      // Clear previous inputs
+      document.getElementById('clientName').value = '';
+      document.getElementById('clientPhone').value = '';
+      document.getElementById('clientNotes').value = '';
+    }
+
+    function saveClient() {
+      const clientName = document.getElementById('clientName').value;
+      const clientPhone = document.getElementById('clientPhone').value;
+      const clientNotes = document.getElementById('clientNotes').value;
+
+      if (!clientName || !clientPhone) {
+        alert("Будь ласка, введіть ім'я та телефон клієнта.");
+        return;
+      }
+
+      const allBusinesses = JSON.parse(localStorage.getItem("allBusinesses") || "[]");
+      if (selectedBusinessIndex !== -1 && allBusinesses[selectedBusinessIndex]) {
+        const newClient = { name: clientName, phone: clientPhone, notes: clientNotes };
+        allBusinesses[selectedBusinessIndex].clients.push(newClient);
+        localStorage.setItem("allBusinesses", JSON.stringify(allBusinesses));
+        alert("Клієнта успішно додано!");
+        goBack(); // Go back to business dashboard
+      } else {
+        alert("Помилка: Бізнес не вибрано.");
+      }
+    }
+
+    // --- New Service Functions ---
+    function showAddServiceScreen() {
+      showScreen('addServiceScreen');
+      // Clear previous inputs
+      document.getElementById('serviceName').value = '';
+      document.getElementById('servicePrice').value = '';
+      document.getElementById('serviceTime').value = '';
+    }
+
+    function saveService() {
+      const serviceName = document.getElementById('serviceName').value;
+      const servicePrice = parseFloat(document.getElementById('servicePrice').value);
+      const serviceTime = parseInt(document.getElementById('serviceTime').value);
+
+      if (!serviceName || isNaN(servicePrice) || isNaN(serviceTime)) {
+        alert("Будь ласка, заповніть всі поля для послуги.");
+        return;
+      }
+      if (servicePrice <= 0 || serviceTime <= 0) {
+        alert("Ціна та тривалість послуги повинні бути позитивними числами.");
+        return;
+      }
+
+      const allBusinesses = JSON.parse(localStorage.getItem("allBusinesses") || "[]");
+      if (selectedBusinessIndex !== -1 && allBusinesses[selectedBusinessIndex]) {
+        const newService = { name: serviceName, price: servicePrice, time: serviceTime };
+        allBusinesses[selectedBusinessIndex].services.push(newService);
+        localStorage.setItem("allBusinesses", JSON.stringify(allBusinesses));
+        alert("Послугу успішно додано!");
+        goBack(); // Go back to business dashboard
+      } else {
+        alert("Помилка: Бізнес не вибрано.");
+      }
+    }
+
+    // --- Schedule Functions ---
+    function showScheduleScreen() {
+      const businesses = JSON.parse(localStorage.getItem("allBusinesses") || "[]");
+      if (selectedBusinessIndex !== -1 && businesses[selectedBusinessIndex]) {
+          document.getElementById('scheduleBusinessName').innerText = businesses[selectedBusinessIndex].name;
+      } else {
+          document.getElementById('scheduleBusinessName').innerText = "невідомий бізнес";
+      }
+      showScreen('scheduleScreen');
+    }
+
+    // Initial load logic
+    window.onload = () => {
+      applySettings(); // Apply saved settings first
+      showScreen("welcomeScreen"); // Ensure welcome screen is shown on load
+    };
+  </script>
+</body>
+</html>
